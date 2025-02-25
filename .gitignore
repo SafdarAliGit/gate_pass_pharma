@@ -1,0 +1,7 @@
+.DS_Store
+*.pyc
+*.egg-info
+*.swp
+tags
+gate_pass_pharma/docs/current
+node_modules/
