@@ -5,23 +5,22 @@ from frappe.model.document import Document
 class GateInwardPass(Document):
     def on_submit(self):
         # Check if 'po_no' exists
-        if self.po_no:
-            # Fetch the Purchase Order document
-            po = frappe.get_doc("Purchase Order", self.po_no)
-            gate_inward_pass_items = self.gate_inward_pass_items
+        supplier = frappe.get_doc("Supplier", self.party)
+        if self.po_no and self.gate_inward_pass_items:
+            for item in self.gate_inward_pass_items:
+            
+                # Create a new Purchase Receipt document
+                pr = frappe.new_doc("Purchase Receipt")
+                pr.supplier = self.party
+                pr.supplier_address = supplier.supplier_primary_address
+                pr.supplier_name = supplier.supplier_name
+                pr.posting_date = frappe.utils.nowdate()
+                pr.posting_time = frappe.utils.now()
+                pr.ref_no = self.name
+                pr.ref_doctype = "Gate Inward Pass"
 
-            # Create a new Purchase Receipt document
-            pr = frappe.new_doc("Purchase Receipt")
-            pr.supplier = po.supplier
-            pr.supplier_address = po.supplier_address
-            pr.supplier_name = po.supplier_name
-            pr.posting_date = po.transaction_date
-            pr.posting_time = frappe.utils.now()
-            pr.ref_no = self.name
-            pr.ref_doctype = "Gate Inward Pass"
-
-            # Add items to the Purchase Receipt
-            for item in gate_inward_pass_items:
+                # Add items to the Purchase Receipt
+                
                 pr.append("items", {
                     "item_code": item.item_code,
                     "stock_uom": item.uom,
@@ -30,18 +29,17 @@ class GateInwardPass(Document):
                     "amount": item.qty * item.rate
                 })
 
-            try:
-                # Save and submit the Purchase Receipt
-                pr.insert()
-                pr.submit()
+                try:
+                    # Save and submit the Purchase Receipt
+                    pr.insert()
+                    
+                    # Update the Gate Inward Pass with the Purchase Receipt reference
+                    self.db_set("ref_no", pr.name)
+                    self.db_set("ref_doctype", "Purchase Receipt")
 
-                # Update the Gate Inward Pass with the Purchase Receipt reference
-                self.db_set("ref_no", pr.name)
-                self.db_set("ref_doctype", "Purchase Receipt")
+                except Exception as e:
+                    # Handle any errors during the creation of the Purchase Receipt
+                    frappe.throw(frappe._("Error creating Purchase Receipt: {0}".format(str(e))))
 
-            except Exception as e:
-                # Handle any errors during the creation of the Purchase Receipt
-                frappe.throw(frappe._("Error creating Purchase Receipt: {0}".format(str(e))))
-
-        # No Purchase Order reference; only submit the Gate Inward Pass
-        # Further logic for only submitting the Gate Inward Pass (if any) can be added here
+            # No Purchase Order reference; only submit the Gate Inward Pass
+            # Further logic for only submitting the Gate Inward Pass (if any) can be added here
