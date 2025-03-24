@@ -26,7 +26,8 @@ class GateInwardPass(Document):
                     "stock_uom": item.uom,
                     "qty": item.qty,
                     "rate": item.rate,
-                    "amount": item.qty * item.rate
+                    "amount": item.qty * item.rate,
+                    "purchase_order": self.po_no
                 })
 
                 try:
